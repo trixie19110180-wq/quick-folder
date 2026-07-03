@@ -1,0 +1,24 @@
+<fieldset class="fieldset">
+  <legend>Visibility</legend>
+  <label class="radio-line">
+    <input type="radio" name="visibility" value="public" checked>
+    <span>Public</span>
+  </label>
+  <label class="radio-line">
+    <input type="radio" name="visibility" value="protected">
+    <span>Password-protected</span>
+  </label>
+  <label class="field password-field hidden">
+    <span>Password</span>
+    <input name="password" type="password" autocomplete="new-password" minlength="1">
+  </label>
+</fieldset>
+
+<label class="field">
+  <span>Auto-delete</span>
+  <select name="retention" required>
+    <% retentionOptions.forEach((option) => { %>
+      <option value="<%= option.value %>"><%= option.label %></option>
+    <% }) %>
+  </select>
+</label>

@@ -1,0 +1,24 @@
+services:
+  - type: web
+    name: folder-app
+    env: node
+    plan: starter
+    buildCommand: npm install
+    startCommand: npm start
+    disk:
+      name: folder-app-data
+      mountPath: /var/data
+      sizeGB: 1
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: DATA_DIR
+        value: /var/data
+      - key: APP_SECRET
+        generateValue: true
+      - key: MAX_FILE_SIZE_MB
+        value: 50
+      - key: MAX_TEXT_SIZE_MB
+        value: 10
+      - key: ENABLE_PERMANENT_RETENTION
+        value: false

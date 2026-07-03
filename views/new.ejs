@@ -1,0 +1,50 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title><%= title %></title>
+    <link rel="stylesheet" href="/styles.css">
+  </head>
+  <body>
+    <header class="topbar">
+      <a class="brand" href="/">Folder App</a>
+      <a class="ghost-link" href="/">Feed</a>
+    </header>
+
+    <main class="page narrow">
+      <h1>New post</h1>
+
+      <div class="choice-grid" role="tablist" aria-label="Post type">
+        <button class="choice active" type="button" data-mode="file">Upload file</button>
+        <button class="choice" type="button" data-mode="text">Post text</button>
+      </div>
+
+      <form id="file-form" class="composer" enctype="multipart/form-data">
+        <label class="field">
+          <span>Files</span>
+          <input name="files" type="file" multiple required>
+          <small>Up to <%= maxFilesPerPost %> files. Maximum <%= maxFileSize %> per file.</small>
+        </label>
+        <%- include("partials/options", { retentionOptions }) %>
+        <button class="primary-button" type="submit">Post files</button>
+        <progress class="progress" max="100" value="0" hidden></progress>
+        <p class="form-message" role="status"></p>
+      </form>
+
+      <form id="text-form" class="composer hidden">
+        <label class="field">
+          <span>Text</span>
+          <textarea name="text" rows="16" spellcheck="false" autocomplete="off" placeholder="Paste text here" required></textarea>
+          <small>Maximum <%= maxTextSize %>. Full text is only loaded when someone opens the post.</small>
+        </label>
+        <%- include("partials/options", { retentionOptions }) %>
+        <button class="primary-button" type="submit">Post text</button>
+        <progress class="progress" max="100" value="0" hidden></progress>
+        <p class="form-message" role="status"></p>
+      </form>
+    </main>
+
+    <script src="/app.js" defer></script>
+  </body>
+</html>

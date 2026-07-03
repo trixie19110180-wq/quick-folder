@@ -1,0 +1,78 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title><%= title %></title>
+    <link rel="stylesheet" href="/styles.css">
+  </head>
+  <body>
+    <header class="topbar">
+      <a class="brand" href="/">Folder App</a>
+      <a class="add-button" href="/new" aria-label="Create new post">+</a>
+    </header>
+
+    <main class="page narrow">
+      <section class="post-detail">
+        <div class="post-row">
+          <span class="type-pill"><%= post.kind === "text" ? "Text" : "Files" %></span>
+          <% if (post.password_hash) { %>
+            <span class="lock-pill">Locked</span>
+          <% } %>
+        </div>
+        <h1><%= post.password_hash && !hasAccess ? "Password required" : "Shared post" %></h1>
+        <p class="meta"><%= retentionLabel(post.delete_at) %></p>
+
+        <label class="field">
+          <span>Share link</span>
+          <input value="<%= shareUrl %>" readonly>
+        </label>
+
+        <% if (!hasAccess) { %>
+          <form class="composer compact" action="/p/<%= post.slug %>/unlock" method="post">
+            <label class="field">
+              <span>Password</span>
+              <input type="password" name="password" required autocomplete="current-password">
+            </label>
+            <button class="primary-button" type="submit">Unlock</button>
+            <% if (typeof unlockError !== "undefined") { %>
+              <p class="form-message error"><%= unlockError %></p>
+            <% } %>
+          </form>
+        <% } else if (post.kind === "text") { %>
+          <div class="button-row">
+            <button class="primary-button" type="button" id="load-text" data-slug="<%= post.slug %>">Load text</button>
+            <a class="secondary-button" href="/p/<%= post.slug %>/text.txt">Download .txt</a>
+            <% if (isAdmin) { %>
+              <form action="/admin/posts/<%= post.slug %>/delete" method="post" data-confirm="Delete this post?">
+                <input type="hidden" name="next" value="/">
+                <button class="danger-button" type="submit">Delete</button>
+              </form>
+            <% } %>
+          </div>
+          <pre id="text-output" class="text-output" aria-live="polite"></pre>
+        <% } else { %>
+          <% if (isAdmin) { %>
+            <form class="admin-inline-form" action="/admin/posts/<%= post.slug %>/delete" method="post" data-confirm="Delete this post and its files?">
+              <input type="hidden" name="next" value="/">
+              <button class="danger-button" type="submit">Delete post</button>
+            </form>
+          <% } %>
+          <section class="file-list" aria-label="Files">
+            <% files.forEach((file) => { %>
+              <article class="file-item">
+                <div>
+                  <strong><%= file.original_name %></strong>
+                  <p class="meta"><%= formatBytes(file.size) %></p>
+                </div>
+                <a class="secondary-button" href="/p/<%= post.slug %>/files/<%= file.id %>/download">Download</a>
+              </article>
+            <% }) %>
+          </section>
+        <% } %>
+      </section>
+    </main>
+
+    <script src="/app.js" defer></script>
+  </body>
+</html>

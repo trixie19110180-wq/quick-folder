@@ -1,0 +1,68 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title><%= title %></title>
+    <link rel="stylesheet" href="/styles.css">
+  </head>
+  <body>
+    <header class="topbar">
+      <a class="brand" href="/">Folder App</a>
+      <a class="add-button" href="/new" aria-label="Create new post">+</a>
+    </header>
+
+    <main class="page">
+      <section class="feed-header">
+        <div>
+          <h1>Public folder</h1>
+          <p>Post a file or text, then open it later from another computer.</p>
+        </div>
+      </section>
+
+      <% if (posts.length === 0) { %>
+        <div class="empty-state">
+          <p>No posts yet.</p>
+          <a class="primary-link" href="/new">Create the first post</a>
+        </div>
+      <% } %>
+
+      <section class="post-list" aria-label="Public posts">
+        <% posts.forEach((post) => { %>
+          <article class="post-card">
+            <a href="/p/<%= post.slug %>" class="post-card-link">
+              <div class="post-row">
+                <span class="type-pill"><%= post.kind === "text" ? "Text" : "Files" %></span>
+                <% if (post.password_hash) { %>
+                  <span class="lock-pill">Locked</span>
+                <% } %>
+              </div>
+              <% if (post.password_hash) { %>
+                <h2>Password-protected post</h2>
+                <p class="preview">Open this post and enter its password to view the contents.</p>
+              <% } else if (post.kind === "text") { %>
+                <h2>Text post</h2>
+                <p class="preview"><%= post.text_preview || "No preview available." %></p>
+                <p class="meta"><%= formatBytes(post.text_bytes) %> of text</p>
+              <% } else { %>
+                <h2>File post</h2>
+                <p class="preview"><%= post.file_count %> file<%= post.file_count === 1 ? "" : "s" %> ready to download.</p>
+                <p class="meta"><%= formatBytes(post.total_file_bytes || 0) %> total</p>
+              <% } %>
+              <p class="meta"><%= retentionLabel(post.delete_at) %></p>
+            </a>
+          </article>
+        <% }) %>
+      </section>
+
+      <nav class="pagination" aria-label="Post pages">
+        <% if (page > 1) { %>
+          <a href="/?page=<%= page - 1 %>">Previous</a>
+        <% } %>
+        <% if (hasNext) { %>
+          <a href="/?page=<%= page + 1 %>">Next</a>
+        <% } %>
+      </nav>
+    </main>
+  </body>
+</html>

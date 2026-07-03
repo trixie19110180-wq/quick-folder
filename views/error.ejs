@@ -1,0 +1,22 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title><%= title %></title>
+    <link rel="stylesheet" href="/styles.css">
+  </head>
+  <body>
+    <header class="topbar">
+      <a class="brand" href="/">Folder App</a>
+      <a class="add-button" href="/new" aria-label="Create new post">+</a>
+    </header>
+    <main class="page narrow">
+      <div class="empty-state">
+        <h1><%= title %></h1>
+        <p><%= message %></p>
+        <a class="primary-link" href="/">Back to feed</a>
+      </div>
+    </main>
+  </body>
+</html>

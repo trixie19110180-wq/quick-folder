@@ -1,0 +1,43 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title><%= title %></title>
+    <link rel="stylesheet" href="/styles.css">
+  </head>
+  <body>
+    <header class="topbar">
+      <a class="brand" href="/">Folder App</a>
+      <a class="ghost-link" href="/">Feed</a>
+    </header>
+
+    <main class="page narrow">
+      <h1>Admin</h1>
+      <% if (!adminEnabled) { %>
+        <div class="empty-state">
+          <p>Admin login is disabled until the admin environment variables are set.</p>
+        </div>
+      <% } else { %>
+        <form class="composer" action="/admin/login" method="post">
+          <label class="field">
+            <span>Username</span>
+            <input name="username" autocomplete="username" required>
+          </label>
+          <label class="field">
+            <span>Password 1</span>
+            <input name="password1" type="password" autocomplete="current-password" required>
+          </label>
+          <label class="field">
+            <span>Password 2</span>
+            <input name="password2" type="password" inputmode="numeric" autocomplete="current-password" required>
+          </label>
+          <button class="primary-button" type="submit">Open admin</button>
+          <% if (typeof error !== "undefined") { %>
+            <p class="form-message error"><%= error %></p>
+          <% } %>
+        </form>
+      <% } %>
+    </main>
+  </body>
+</html>
