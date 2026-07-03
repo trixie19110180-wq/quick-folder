@@ -107,9 +107,9 @@ Create the empty GitHub repo in your browser before running the second set of co
 2. Choose **Blueprint**.
 3. Connect the GitHub repo.
 4. Render will read `render.yaml`.
-5. Render will create a Node web service and a persistent disk mounted at `/var/data`.
+5. Render will create a free Node web service.
 6. After the first deploy, set `APP_BASE_URL` to your Render URL, for example `https://your-app.onrender.com`.
-7. Keep `DATA_DIR=/var/data` so SQLite and uploads survive deploys and restarts.
+7. Keep `DATA_DIR=./data` on the free plan.
 
 ### 4. Add admin environment variables on Render
 
@@ -129,10 +129,9 @@ You can also create a Render Web Service manually:
 
 - Build command: `npm install`
 - Start command: `npm start`
-- Add a persistent disk mounted at `/var/data`
 - Environment variables:
   - `NODE_ENV=production`
-  - `DATA_DIR=/var/data`
+  - `DATA_DIR=./data`
   - `APP_SECRET=<a long random value>`
   - `APP_BASE_URL=<your Render URL>`
   - `ADMIN_USERNAME=Trixie`
@@ -141,7 +140,7 @@ You can also create a Render Web Service manually:
 
 ## Storage Notes
 
-SQLite plus a Render persistent disk is simple and practical for a small school-transfer app. For heavy public use, switch file storage to object storage and add moderation/admin tools before enabling permanent posts.
+SQLite plus local Render Free storage is simple for testing, but uploaded files and posts are not guaranteed permanent on the free plan. For reliable storage, upgrade the service and add a persistent disk mounted at `/var/data`, then set `DATA_DIR=/var/data`. For heavy public use, switch file storage to object storage and add moderation/admin tools before enabling permanent posts.
 
 ## Security Notes
 
