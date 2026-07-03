@@ -11,7 +11,7 @@
     "cleanup": "node src/cleanup.js"
   },
   "engines": {
-    "node": ">=20"
+    "node": "20.x"
   },
   "dependencies": {
     "better-sqlite3": "^11.10.0",
