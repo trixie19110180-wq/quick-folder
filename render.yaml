@@ -1,6 +1,6 @@
 services:
   - type: web
-    name: folder-app
+    name: quick-folder
     env: node
     plan: free
     buildCommand: npm install

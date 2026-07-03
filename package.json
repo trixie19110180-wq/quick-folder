@@ -1,5 +1,5 @@
 {
-  "name": "folder-app",
+  "name": "quick-folder",
   "version": "1.0.0",
   "description": "A simple no-login web app for sharing files and text between computers.",
   "main": "src/server.js",

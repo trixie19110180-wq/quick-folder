@@ -68,6 +68,20 @@ const unlockLimiter = rateLimit({
   message: { error: "Too many unlock attempts. Please wait and try again." }
 });
 
+const adminLoginLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  limit: 5,
+  standardHeaders: true,
+  legacyHeaders: false,
+  handler: (_req, res) => {
+    res.status(429).render("admin-login", {
+      title: "Admin",
+      adminEnabled: config.adminEnabled,
+      error: "Too many admin login tries. Please wait 15 minutes and try again."
+    });
+  }
+});
+
 const upload = multer({
   storage: multer.diskStorage({
     destination: (_req, _file, cb) => cb(null, path.join(config.uploadDir, "staging")),
@@ -169,7 +183,7 @@ app.get("/", (req, res) => {
     .all(new Date().toISOString(), limit + 1, offset);
 
   res.render("index", {
-    title: "Folder App",
+    title: "QuickFolder",
     posts: posts.slice(0, limit),
     page,
     hasNext: posts.length > limit
@@ -194,7 +208,7 @@ app.get("/admin", (req, res) => {
   });
 });
 
-app.post("/admin/login", unlockLimiter, express.urlencoded({ extended: false }), (req, res) => {
+app.post("/admin/login", adminLoginLimiter, express.urlencoded({ extended: false }), (req, res) => {
   if (!config.adminEnabled) {
     return res.status(403).render("admin-login", {
       title: "Admin",
@@ -400,5 +414,5 @@ app.use((err, _req, res, _next) => {
 startCleanupJob();
 
 app.listen(config.port, () => {
-  console.log(`Folder App running on http://localhost:${config.port}`);
+  console.log(`QuickFolder running on http://localhost:${config.port}`);
 });

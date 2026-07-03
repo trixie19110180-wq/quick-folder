@@ -1,6 +1,6 @@
-# Folder App
+# QuickFolder
 
-Folder App is a small no-login web app for moving files or text between computers. People can create public posts or password-protected posts, then open a shareable link later from another computer.
+QuickFolder is a small no-login web app for moving files or text between computers. People can create public posts or password-protected posts, then open a shareable link later from another computer.
 
 ## Features
 
@@ -79,7 +79,7 @@ Do not put these values in GitHub. Add them to your local `.env` file and to Ren
 cd ~/Documents/folder-app
 git init
 git add .
-git commit -m "Initial Folder App"
+git commit -m "Initial QuickFolder app"
 ```
 
 ### 2. Push to GitHub
@@ -88,14 +88,14 @@ If you have the GitHub CLI installed:
 
 ```bash
 gh auth login
-gh repo create folder-app --public --source=. --remote=origin --push
+gh repo create quick-folder --public --source=. --remote=origin --push
 ```
 
 If you do not use the GitHub CLI:
 
 ```bash
 git branch -M main
-git remote add origin https://github.com/YOUR_GITHUB_USERNAME/folder-app.git
+git remote add origin https://github.com/YOUR_GITHUB_USERNAME/quick-folder.git
 git push -u origin main
 ```
 
