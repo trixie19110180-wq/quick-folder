@@ -11,12 +11,41 @@ function isCloudinaryEnabled() {
   return config.storageDriver === CLOUDINARY_PROVIDER;
 }
 
+function normalizeCloudinaryUrl(value) {
+  if (!value) return "";
+  return value.replace(/^CLOUDINARY_URL=/, "").trim();
+}
+
+function parseCloudinaryUrl(value) {
+  const normalized = normalizeCloudinaryUrl(value);
+  if (!normalized) return null;
+  const match = normalized.match(/^cloudinary:\/\/([^:]+):([^@]+)@(.+)$/);
+  if (!match) return null;
+  return {
+    api_key: decodeURIComponent(match[1]),
+    api_secret: decodeURIComponent(match[2]),
+    cloud_name: decodeURIComponent(match[3])
+  };
+}
+
+function cloudinaryCredentials() {
+  const fromUrl = parseCloudinaryUrl(process.env.CLOUDINARY_URL);
+  if (fromUrl) return fromUrl;
+  if (process.env.CLOUDINARY_CLOUD_NAME && process.env.CLOUDINARY_API_KEY && process.env.CLOUDINARY_API_SECRET) {
+    return {
+      cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
+      api_key: process.env.CLOUDINARY_API_KEY,
+      api_secret: process.env.CLOUDINARY_API_SECRET
+    };
+  }
+  return null;
+}
+
 if (isCloudinaryEnabled()) {
-  const cloudinaryConfig = { secure: true };
-  if (process.env.CLOUDINARY_CLOUD_NAME) cloudinaryConfig.cloud_name = process.env.CLOUDINARY_CLOUD_NAME;
-  if (process.env.CLOUDINARY_API_KEY) cloudinaryConfig.api_key = process.env.CLOUDINARY_API_KEY;
-  if (process.env.CLOUDINARY_API_SECRET) cloudinaryConfig.api_secret = process.env.CLOUDINARY_API_SECRET;
-  cloudinary.config(cloudinaryConfig);
+  const credentials = cloudinaryCredentials();
+  if (credentials) {
+    cloudinary.config({ ...credentials, secure: true });
+  }
 }
 
 function localPostDir(postId) {
@@ -40,6 +69,10 @@ async function storeUploadedFile(file, postId) {
       deliveryType: "local",
       format: path.extname(safeOriginal).replace(".", "") || null
     };
+  }
+
+  if (!cloudinaryCredentials()) {
+    throw new Error("Cloudinary is not configured. Set CLOUDINARY_URL in Render without extra spaces or question marks.");
   }
 
   const publicId = `${config.cloudinaryFolder}/posts/${postId}/${randomSlug()}`;

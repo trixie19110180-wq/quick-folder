@@ -426,6 +426,14 @@ app.use((err, _req, res, _next) => {
       : err.message;
     return res.status(400).json({ error: message });
   }
+  const isCloudinaryError = err.http_code || /cloudinary/i.test(err.message || "");
+  if (isCloudinaryError) {
+    const message = err.message || "Cloudinary upload failed.";
+    return res.status(500).format({
+      json: () => res.json({ error: message }),
+      html: () => res.render("error", { title: "Storage error", message })
+    });
+  }
   console.error(err);
   res.status(500).format({
     json: () => res.json({ error: "Something went wrong." }),
