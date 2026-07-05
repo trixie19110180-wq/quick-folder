@@ -17,6 +17,8 @@ const config = {
   dataDir,
   dbPath: path.resolve(process.env.DATABASE_PATH || path.join(dataDir, "folder-app.sqlite")),
   uploadDir: path.resolve(process.env.UPLOAD_DIR || path.join(dataDir, "uploads")),
+  storageDriver: process.env.STORAGE_DRIVER || "local",
+  cloudinaryFolder: process.env.CLOUDINARY_FOLDER || "quick-folder",
   maxFileSizeBytes: numberEnv("MAX_FILE_SIZE_MB", 50) * 1024 * 1024,
   maxTextSizeBytes: numberEnv("MAX_TEXT_SIZE_MB", 10) * 1024 * 1024,
   maxFilesPerPost: numberEnv("MAX_FILES_PER_POST", 10),

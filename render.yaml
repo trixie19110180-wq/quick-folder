@@ -10,6 +10,8 @@ services:
         value: production
       - key: DATA_DIR
         value: ./data
+      - key: STORAGE_DRIVER
+        value: local
       - key: APP_SECRET
         generateValue: true
       - key: MAX_FILE_SIZE_MB

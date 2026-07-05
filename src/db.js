@@ -36,6 +36,17 @@ db.exec(`
   CREATE INDEX IF NOT EXISTS idx_files_post_id ON files(post_id);
 `);
 
+const fileColumns = db.prepare("PRAGMA table_info(files)").all().map((column) => column.name);
+const addFileColumn = (name, definition) => {
+  if (!fileColumns.includes(name)) db.exec(`ALTER TABLE files ADD COLUMN ${name} ${definition}`);
+};
+
+addFileColumn("storage_provider", "TEXT NOT NULL DEFAULT 'local'");
+addFileColumn("storage_key", "TEXT");
+addFileColumn("storage_resource_type", "TEXT");
+addFileColumn("storage_delivery_type", "TEXT");
+addFileColumn("storage_format", "TEXT");
+
 module.exports = db;
 
 if (require.main === module) {

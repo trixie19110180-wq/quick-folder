@@ -8,6 +8,7 @@ const rateLimit = require("express-rate-limit");
 const db = require("./db");
 const { config, retentionOptions, getDeleteAt } = require("./config");
 const { startCleanupJob, removePostFiles } = require("./cleanup");
+const { storeUploadedFile, sendStoredFile } = require("./storage");
 const {
   randomSlug,
   hashPassword,
@@ -18,7 +19,6 @@ const {
   setUnlockCookie,
   setAdminCookie,
   clearAdminCookie,
-  sanitizeFilename,
   validateUploadName,
   wantsPassword
 } = require("./security");
@@ -38,7 +38,7 @@ app.use(
         defaultSrc: ["'self'"],
         scriptSrc: ["'self'"],
         styleSrc: ["'self'"],
-        imgSrc: ["'self'", "data:"],
+        imgSrc: ["'self'", "data:", "https://res.cloudinary.com"],
         objectSrc: ["'none'"]
       }
     }
@@ -98,6 +98,10 @@ const upload = multer({
   }
 });
 
+const asyncHandler = (handler) => (req, res, next) => {
+  Promise.resolve(handler(req, res, next)).catch(next);
+};
+
 function formatBytes(bytes) {
   if (bytes < 1024) return `${bytes} B`;
   if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
@@ -154,11 +158,11 @@ function requireAdmin(req, res, next) {
   return res.redirect("/admin");
 }
 
-function deletePostBySlug(slug) {
+async function deletePostBySlug(slug) {
   const post = db.prepare("SELECT id FROM posts WHERE slug = ?").get(slug);
   if (!post) return false;
+  await removePostFiles(post.id);
   db.prepare("DELETE FROM posts WHERE id = ?").run(post.id);
-  removePostFiles(post.id);
   return true;
 }
 
@@ -174,7 +178,8 @@ app.get("/", (req, res) => {
     .prepare(
       `SELECT p.id, p.slug, p.kind, p.password_hash, p.delete_at, p.created_at, p.text_preview, p.text_bytes,
         (SELECT COUNT(*) FROM files f WHERE f.post_id = p.id) AS file_count,
-        (SELECT COALESCE(SUM(size), 0) FROM files f WHERE f.post_id = p.id) AS total_file_bytes
+        (SELECT COALESCE(SUM(size), 0) FROM files f WHERE f.post_id = p.id) AS total_file_bytes,
+        (SELECT f.id FROM files f WHERE f.post_id = p.id AND f.mime_type LIKE 'image/%' ORDER BY f.id ASC LIMIT 1) AS preview_file_id
        FROM posts p
        WHERE p.delete_at IS NULL OR p.delete_at > ?
        ORDER BY p.created_at DESC
@@ -246,7 +251,8 @@ app.get("/admin/posts", requireAdmin, (req, res) => {
     .prepare(
       `SELECT p.id, p.slug, p.kind, p.password_hash, p.delete_at, p.created_at, p.text_preview, p.text_bytes,
         (SELECT COUNT(*) FROM files f WHERE f.post_id = p.id) AS file_count,
-        (SELECT COALESCE(SUM(size), 0) FROM files f WHERE f.post_id = p.id) AS total_file_bytes
+        (SELECT COALESCE(SUM(size), 0) FROM files f WHERE f.post_id = p.id) AS total_file_bytes,
+        (SELECT f.id FROM files f WHERE f.post_id = p.id AND f.mime_type LIKE 'image/%' ORDER BY f.id ASC LIMIT 1) AS preview_file_id
        FROM posts p
        ORDER BY p.created_at DESC
        LIMIT ? OFFSET ?`
@@ -261,11 +267,11 @@ app.get("/admin/posts", requireAdmin, (req, res) => {
   });
 });
 
-app.post("/admin/posts/:slug/delete", requireAdmin, (req, res) => {
-  deletePostBySlug(req.params.slug);
+app.post("/admin/posts/:slug/delete", requireAdmin, asyncHandler(async (req, res) => {
+  await deletePostBySlug(req.params.slug);
   const nextUrl = req.body.next || "/admin/posts";
   res.redirect(nextUrl.startsWith("/") ? nextUrl : "/admin/posts");
-});
+}));
 
 app.post("/api/posts/text", createLimiter, upload.none(), (req, res) => {
   const error = validatePostOptions(req.body);
@@ -286,7 +292,7 @@ app.post("/api/posts/text", createLimiter, upload.none(), (req, res) => {
   res.json({ url: `/p/${slug}` });
 });
 
-app.post("/api/posts/files", createLimiter, upload.array("files", config.maxFilesPerPost), (req, res) => {
+app.post("/api/posts/files", createLimiter, upload.array("files", config.maxFilesPerPost), asyncHandler(async (req, res) => {
   const files = req.files || [];
   const error = validatePostOptions(req.body);
   if (error) {
@@ -301,39 +307,49 @@ app.post("/api/posts/files", createLimiter, upload.array("files", config.maxFile
      VALUES (?, 'file', ?, ?)`
   );
   const createFile = db.prepare(
-    `INSERT INTO files (post_id, original_name, stored_name, size, mime_type)
-     VALUES (?, ?, ?, ?, ?)`
+    `INSERT INTO files (
+       post_id, original_name, stored_name, size, mime_type,
+       storage_provider, storage_key, storage_resource_type, storage_delivery_type, storage_format
+     )
+     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
   );
 
-  const transaction = db.transaction(() => {
-    const result = createPost.run(slug, buildPasswordHash(req.body), getDeleteAt(req.body.retention));
-    const postId = result.lastInsertRowid;
-    const postDir = path.join(config.uploadDir, String(postId));
-    fs.mkdirSync(postDir, { recursive: true });
-
-    for (const file of files) {
-      const safeOriginal = sanitizeFilename(file.originalname);
-      const safeStored = sanitizeFilename(file.filename);
-      fs.renameSync(file.path, path.join(postDir, safeStored));
-      createFile.run(postId, safeOriginal, safeStored, file.size, file.mimetype || "application/octet-stream");
-    }
-  });
-
+  let postId;
   try {
-    transaction();
+    const result = createPost.run(slug, buildPasswordHash(req.body), getDeleteAt(req.body.retention));
+    postId = result.lastInsertRowid;
+    for (const file of files) {
+      const stored = await storeUploadedFile(file, postId);
+      createFile.run(
+        postId,
+        stored.originalName,
+        stored.storedName,
+        file.size,
+        file.mimetype || "application/octet-stream",
+        stored.provider,
+        stored.storageKey,
+        stored.resourceType,
+        stored.deliveryType,
+        stored.format
+      );
+    }
     res.json({ url: `/p/${slug}` });
   } catch (err) {
     cleanupUploadedFiles(files);
+    if (postId) {
+      await removePostFiles(postId);
+      db.prepare("DELETE FROM posts WHERE id = ?").run(postId);
+    }
     throw err;
   }
-});
+}));
 
 app.get("/p/:slug", (req, res, next) => {
   const post = getPostBySlug(req.params.slug);
   if (!post) return next();
   const hasAccess = canAccessPost(req, post);
   const files = hasAccess && post.kind === "file"
-    ? db.prepare("SELECT id, original_name, size FROM files WHERE post_id = ? ORDER BY id ASC").all(post.id)
+    ? db.prepare("SELECT id, original_name, size, mime_type FROM files WHERE post_id = ? ORDER BY id ASC").all(post.id)
     : [];
 
   res.render("post", {
@@ -387,10 +403,16 @@ app.get("/p/:slug/files/:fileId/download", (req, res, next) => {
   if (!canAccessPost(req, post)) return res.status(403).send("Password required.");
   const file = db.prepare("SELECT * FROM files WHERE id = ? AND post_id = ?").get(req.params.fileId, post.id);
   if (!file) return next();
-  const filePath = path.join(config.uploadDir, String(post.id), file.stored_name);
-  res.setHeader("X-Content-Type-Options", "nosniff");
-  res.setHeader("Content-Type", "application/octet-stream");
-  res.download(filePath, file.original_name);
+  sendStoredFile(res, post.id, file, { attachment: true });
+});
+
+app.get("/p/:slug/files/:fileId/preview", (req, res, next) => {
+  const post = getPostBySlug(req.params.slug);
+  if (!post || post.kind !== "file") return next();
+  if (!canAccessPost(req, post)) return res.status(403).send("Password required.");
+  const file = db.prepare("SELECT * FROM files WHERE id = ? AND post_id = ?").get(req.params.fileId, post.id);
+  if (!file || !file.mime_type.startsWith("image/")) return next();
+  sendStoredFile(res, post.id, file, { preview: true });
 });
 
 app.use((req, res) => {

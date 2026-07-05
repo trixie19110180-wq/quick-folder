@@ -40,6 +40,10 @@
             <% } %>
           </form>
         <% } else if (post.kind === "text") { %>
+          <div class="text-preview-box">
+            <span>Preview</span>
+            <p><%= post.text_preview || "No preview available." %></p>
+          </div>
           <div class="button-row">
             <button class="primary-button" type="button" id="load-text" data-slug="<%= post.slug %>">Load text</button>
             <a class="secondary-button" href="/p/<%= post.slug %>/text.txt">Download .txt</a>
@@ -61,6 +65,9 @@
           <section class="file-list" aria-label="Files">
             <% files.forEach((file) => { %>
               <article class="file-item">
+                <% if (file.mime_type && file.mime_type.startsWith("image/")) { %>
+                  <img class="file-thumb" src="/p/<%= post.slug %>/files/<%= file.id %>/preview" alt="">
+                <% } %>
                 <div>
                   <strong><%= file.original_name %></strong>
                   <p class="meta"><%= formatBytes(file.size) %></p>

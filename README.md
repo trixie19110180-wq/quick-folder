@@ -13,6 +13,8 @@ QuickFolder is a small no-login web app for moving files or text between compute
 - Auto-delete choices: 24 hours, 3 days, 7 days, 1 month, 6 months, 1 year
 - Permanent posts are disabled unless `ENABLE_PERMANENT_RETENTION=true`
 - SQLite database and local file storage
+- Optional Cloudinary file storage for Render Free deployments
+- Text previews and image thumbnails without loading full posts
 - Basic rate limiting, upload validation, attachment-only downloads, and XSS-safe rendering
 - Background cleanup job for expired posts and uploaded files
 
@@ -46,6 +48,12 @@ npm start
 | `DATA_DIR` | `./data` | Base folder for SQLite and uploads |
 | `DATABASE_PATH` | `$DATA_DIR/folder-app.sqlite` | Optional custom SQLite file path |
 | `UPLOAD_DIR` | `$DATA_DIR/uploads` | Optional custom uploaded-file folder |
+| `STORAGE_DRIVER` | `local` | Use `cloudinary` on Render to store files outside the instance |
+| `CLOUDINARY_URL` | blank | Cloudinary connection URL from the Cloudinary dashboard |
+| `CLOUDINARY_CLOUD_NAME` | blank | Alternative to `CLOUDINARY_URL` |
+| `CLOUDINARY_API_KEY` | blank | Alternative to `CLOUDINARY_URL` |
+| `CLOUDINARY_API_SECRET` | blank | Alternative to `CLOUDINARY_URL` |
+| `CLOUDINARY_FOLDER` | `quick-folder` | Cloudinary folder prefix for uploaded assets |
 | `MAX_FILE_SIZE_MB` | `50` | Maximum size of each uploaded file |
 | `MAX_TEXT_SIZE_MB` | `10` | Maximum text-post size |
 | `MAX_FILES_PER_POST` | `10` | Maximum files per file post |
@@ -123,6 +131,20 @@ ADMIN_PASSWORD_2=<your second admin password>
 
 Then click **Manual Deploy** > **Deploy latest commit**.
 
+### 5. Keep files with Cloudinary on Render Free
+
+Render Free storage can disappear when instances restart. To keep uploaded files, create a free Cloudinary account and copy your `CLOUDINARY_URL` from the Cloudinary dashboard.
+
+In Render, add:
+
+```bash
+STORAGE_DRIVER=cloudinary
+CLOUDINARY_URL=<your Cloudinary URL>
+CLOUDINARY_FOLDER=quick-folder
+```
+
+The app stores Cloudinary assets as authenticated assets and only generates signed preview/download URLs after the post's password check passes. Expired posts and admin-deleted posts also delete their Cloudinary assets.
+
 ### Manual Render setup
 
 You can also create a Render Web Service manually:
@@ -140,7 +162,7 @@ You can also create a Render Web Service manually:
 
 ## Storage Notes
 
-SQLite plus local Render Free storage is simple for testing, but uploaded files and posts are not guaranteed permanent on the free plan. For reliable storage, upgrade the service and add a persistent disk mounted at `/var/data`, then set `DATA_DIR=/var/data`. For heavy public use, switch file storage to object storage and add moderation/admin tools before enabling permanent posts.
+SQLite plus local Render Free storage is simple for testing, but uploaded files are not guaranteed permanent on the free plan. For reliable file storage on Render Free, set `STORAGE_DRIVER=cloudinary` and add `CLOUDINARY_URL`. For reliable database storage too, upgrade the service and add a persistent disk mounted at `/var/data`, then set `DATA_DIR=/var/data`. For heavy public use, add moderation/admin tools before enabling permanent posts.
 
 ## Security Notes
 

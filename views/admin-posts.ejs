@@ -43,6 +43,9 @@
                 <p class="preview"><%= post.text_preview || "No preview available." %></p>
                 <p class="meta"><%= formatBytes(post.text_bytes) %> of text</p>
               <% } else { %>
+                <% if (post.preview_file_id) { %>
+                  <img class="feed-image-preview" src="/p/<%= post.slug %>/files/<%= post.preview_file_id %>/preview" alt="">
+                <% } %>
                 <p class="preview"><%= post.file_count %> file<%= post.file_count === 1 ? "" : "s" %>.</p>
                 <p class="meta"><%= formatBytes(post.total_file_bytes || 0) %> total</p>
               <% } %>

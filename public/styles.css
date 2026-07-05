@@ -173,6 +173,38 @@ small {
   -webkit-box-orient: vertical;
 }
 
+.feed-image-preview {
+  display: block;
+  width: 100%;
+  max-height: 220px;
+  object-fit: cover;
+  margin: 10px 0;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  background: #f1f4f6;
+}
+
+.text-preview-box {
+  display: grid;
+  gap: 6px;
+  margin: 18px 0;
+  padding: 14px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  background: #fbfcfd;
+}
+
+.text-preview-box span {
+  color: var(--muted);
+  font-size: 0.86rem;
+  font-weight: 800;
+}
+
+.text-preview-box p {
+  color: var(--text);
+  overflow-wrap: anywhere;
+}
+
 .meta {
   margin-top: 10px;
   font-size: 0.92rem;
@@ -358,6 +390,16 @@ textarea {
   justify-content: space-between;
   gap: 16px;
   padding: 14px;
+}
+
+.file-thumb {
+  width: 72px;
+  height: 72px;
+  flex: 0 0 72px;
+  object-fit: cover;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  background: #f1f4f6;
 }
 
 .text-output {
